@@ -7,10 +7,9 @@
 copy_snapshots.py -i <destination_subscription_id> -k localhost -n mysnapshotstore
 ```
 
-### To check the copy status and update elasticsearch on successful, do the
-following
+### To check the copy status and update elasticsearch on successful copy
 ```
-copy_snapshots.py -i <destination_subscription_id> -k localhost -n mysnapshotstore
+copy_snapshots.py -i <destination_subscription_id> -k localhost -n mysnapshotstore -c
 ```
 
 ### What do I need?
