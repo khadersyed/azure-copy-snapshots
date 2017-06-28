@@ -19,7 +19,6 @@ from azure.mgmt.compute.models import (
 )
 
 from .sdk_auth import AzureSDKAuth
-from .resources import AzureResourcesClient
 
 class AzureManagedDisksClient(AzureSDKAuth):
     """ Class for all azure rest calls related to managed disks"""
@@ -33,7 +32,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
             self.credentials,
             self.subscription_id
         )
-        self.resources_client = AzureResourcesClient()
 
     def list_disks(self, unlocked_disks_only=False):
         """ List all managed disks """
@@ -74,10 +72,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
 
     def delete_disk(self, disk):
         """ Delete a given managed disk """
-        self.resources_client.unlock_resource_group(
-            disk['resource_group']
-        )
-
         print("Deleting: {}".format(disk['name']))
         async_delete_disk = self.__compute_client.disks.delete(
             disk['resource_group'],
@@ -87,10 +81,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
         result = async_delete_disk.result()
         if result.error:
             print(result.error)
-
-        self.resources_client.lock_resource_group(
-            disk['resource_group']
-        )
 
     def list_snapshots(self):
         """ List all managed disk snapshots"""
@@ -129,10 +119,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
         """ Deletes a snapshot when the snapshot id is provided """
         print(snapshot['name'], snapshot['snapshot_time'])
 
-        self.resources_client.unlock_resource_group(
-            snapshot['resource_group']
-        )
-
         async_delete_snapshot = self.__compute_client.snapshots.delete(
             snapshot['resource_group'],
             snapshot['name']
@@ -140,10 +126,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
         result = async_delete_snapshot.result()
         if result.error:
             print(result.error)
-
-        self.resources_client.lock_resource_group(
-            snapshot['resource_group']
-        )
 
     def list_snapshots_for_vm(self, vm_name=None, disk_name=None):
         """ Get list of snapshots for a specific vm"""
@@ -174,44 +156,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
             return snapshots_for_vm
         else:
             return snapshots_for_vm[disk_name]
-
-    def restore_snapshot(self, source_vm=None, disk_name=None, dest_vm=None):
-        """ Restore a snapshot to a disk given a vm and blob name"""
-        snapshots_for_vm_disk = self.list_snapshots_for_vm(source_vm, disk_name)
-        most_recent_snapshot = sorted(
-            snapshots_for_vm_disk,
-            key=lambda s: s['snapshot_time']
-        ).pop()
-
-        dest_mount_point = most_recent_snapshot['mount_point']
-        epoch_time = datetime.utcnow().strftime('%s')
-        new_disk_name = '{}-{}-{}'.format(
-            dest_vm,
-            dest_mount_point,
-            epoch_time
-        )
-
-        async_restore_snapshot = self.__compute_client.disks.create_or_update(
-            most_recent_snapshot['resource_group'],
-            new_disk_name,
-            {
-                'location': most_recent_snapshot['location'],
-                'disk_size_gb': most_recent_snapshot['disk_size_in_gb'],
-                'account_type': StorageAccountTypes.premium_lrs,
-                'creation_data': {
-                    'create_option': DiskCreateOption.copy,
-                    'source_uri': most_recent_snapshot['id']
-                }
-            }
-        )
-
-        new_managed_disk = async_restore_snapshot.result()
-
-        if new_managed_disk.provisioning_state == 'Succeeded':
-            disk_info = {}
-            disk_info['name'] = new_managed_disk.name
-            disk_info['mount_point'] = dest_mount_point
-            return disk_info
 
     def generate_sas_uri(self, resource_group_name, snapshot_name, expiry_in_seconds=86400):
         """ Generates a SAS URI that can be used to copy to storage accounts """
