@@ -4,6 +4,8 @@
 Copyright (c) 2017 Sprinklr Inc.
 Authors & Contributors:
     khader.syed@sprinklr.com
+
+To manipulate most things to do with Azure Storage Accounts
 """
 
 from __future__ import print_function

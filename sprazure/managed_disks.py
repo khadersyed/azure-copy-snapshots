@@ -4,7 +4,7 @@
 Copyright (c) 2017 Sprinklr Inc.
 Primary author: khader.syed@sprinklr.com
 
-Class for Azure Managed Disks
+To manipulate most things to do with Azure Managed Disks
 """
 
 from __future__ import print_function
@@ -61,7 +61,7 @@ class AzureManagedDisksClient(AzureSDKAuth):
 
     def list_unlocked_disks(self):
         """ List all unlocked disks """
-        return self.list_disks(True)
+        return self.list_disks(unlocked_disks_only=True)
 
     def delete_unlocked_disks(self):
         """ List all managed disks """
