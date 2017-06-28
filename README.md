@@ -1,0 +1,1 @@
+# azure-copy-snapshots
