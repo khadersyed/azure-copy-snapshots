@@ -35,8 +35,6 @@ def parse_cli_arguments():
                         help="IP or Hostname of Elasticsearch host", required=True)
     parser.add_argument("-c", "--check-copy-status", action="store_true",
                         help="Check status of any pending copies and update Elasticsearch")
-    parser.add_argument("-s", "--service", choices=["mongo", "solr"], default=None,
-                        help="The service name for which the snapshots need to be copied")
 
     args = parser.parse_args()
 
