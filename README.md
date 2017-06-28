@@ -2,8 +2,15 @@
 
 ## How does it work?
 
+### To create sas uris and copy snapshots, do the following
 ```
-azure_copy_snapshots.py -i <my_subscription_id> -k localhost -n mysnapshotstore
+copy_snapshots.py -i <destination_subscription_id> -k localhost -n mysnapshotstore
+```
+
+### To check the copy status and update elasticsearch on successful, do the
+following
+```
+copy_snapshots.py -i <destination_subscription_id> -k localhost -n mysnapshotstore
 ```
 
 ### What do I need?
