@@ -27,4 +27,4 @@ Or alternately, let me explain, as one should:
   update their sizes etc., into the same elasticsearch index
 * And that's basically it
 
-Remember to test your backups, folks!!
+Remember to test the restoration of your backups, folks!!
