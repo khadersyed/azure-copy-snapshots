@@ -143,6 +143,7 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
     )
 
     storage_accounts_client = AzureStorageAccountsClient(subscription_id)
+    managed_disks_client = AzureManagedDisksClient(subscription_id)
     dest_blob_service = storage_accounts_client.get_blob_service(storage_account_name)
 
     for copy in pending_copies:
@@ -180,10 +181,8 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
             )
             if copy_status == "success":
                 vhd_snapshot = managed_disks_client.vhd_snapshot(snapshot_copy_info)
-                if vhd_snapshot.error:
-                    print(vhd_snapshot.error)
-                else:
-                    dest_blob_service.delete_blob(CONTAINER_NAME, snapshot_copy_info['dest_blob'])
+                print("Snapshot created - {}".format(vhd_snapshot.name))
+                dest_blob_service.delete_blob(CONTAINER_NAME, snapshot_copy_info['dest_blob'])
 
 
 if __name__ == "__main__":

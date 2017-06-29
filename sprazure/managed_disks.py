@@ -19,14 +19,17 @@ from .sdk_auth import AzureSDKAuth
 class AzureManagedDisksClient(AzureSDKAuth):
     """ Class for all azure rest calls related to managed disks"""
 
-    def __init__(self):
+    def __init__(self, subscription_id=None):
         """ Init our class using environment variables, assuming they are set """
 
         super(AzureManagedDisksClient, self).__init__()
 
+        if not subscription_id:
+            subscription_id = self.subscription_id
+
         self.__compute_client = ComputeManagementClient(
             self.credentials,
-            self.subscription_id
+            subscription_id
         )
 
     def list_snapshots(self):
@@ -114,15 +117,14 @@ class AzureManagedDisksClient(AzureSDKAuth):
             snapshot_info['dest_blob']
         )
 
-        print("Snapshot {} from blob {}".format(snapshot_info['tags']['disk_name'], blob_uri))
         async_vhd_snapshot = self.__compute_client.snapshots.create_or_update(
             snapshot_info['dest_resource_group'],
             snapshot_info['tags']['disk_name'],
             {
-                'location': snapshot_info['location'],
+                'location': snapshot_info['dest_location'],
                 'creation_data': {
-                    'create_option': 'Copy',
-                    'blob_uri': blob_uri
+                    'create_option': 'Import',
+                    'source_uri': blob_uri
                 }
             }
         )
