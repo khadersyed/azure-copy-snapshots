@@ -51,7 +51,7 @@ def parse_cli_arguments():
     )
 
     if args.check_copy_status:
-        check_copy_status(subscription_id, es_conn)
+        check_copy_status(subscription_id, storage_account_name, es_conn)
     elif args.destination_account_name:
         managed_disk_client = AzureManagedDisksClient()
 
@@ -149,9 +149,9 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
         snapshot_copy_info = copy['_source']
 
         copy_status_details = storage_accounts_client.get_blob_copy_status(
-            snapshot_copy_info['dest_blob'],
+            snapshot_copy_info['dest_storage_account'],
             snapshot_copy_info['dest_container'],
-            snapshot_copy_info['dest_storage_account']
+            snapshot_copy_info['dest_blob']
         )
 
         if copy_status_details:
