@@ -17,7 +17,7 @@ from azure.mgmt.compute import ComputeManagementClient
 from .sdk_auth import AzureSDKAuth
 
 class AzureManagedDisksClient(AzureSDKAuth):
-    """ Class for all azure rest calls related to managed disks"""
+    """ To manipulate most things to do with Azure Managed Disks """
 
     def __init__(self, subscription_id=None):
         """ Init our class using environment variables, assuming they are set """
@@ -110,7 +110,13 @@ class AzureManagedDisksClient(AzureSDKAuth):
         return snapshot_copy_tracker
 
     def vhd_snapshot(self, snapshot_info):
-        """ Attached a restored disk to a VM """
+        """ Return managed disk snapshot a vhd """
+        epoch_time = datetime.utcnow().strftime('%s')
+        snapshot_name = "{}-{}-snap-{}".format(
+            snapshot_info['tags']['vm_name'],
+            snapshot_info['tags']['mount_point'],
+            epoch_time
+        )
         blob_uri = "https://{}.blob.core.windows.net/{}/{}".format(
             snapshot_info['dest_storage_account'],
             snapshot_info['dest_container'],
@@ -119,12 +125,13 @@ class AzureManagedDisksClient(AzureSDKAuth):
 
         async_vhd_snapshot = self.__compute_client.snapshots.create_or_update(
             snapshot_info['dest_resource_group'],
-            snapshot_info['tags']['disk_name'],
+            snapshot_name,
             {
                 'location': snapshot_info['dest_location'],
                 'creation_data': {
                     'create_option': 'Import',
-                    'source_uri': blob_uri
+                    'source_uri': blob_uri,
+                    'tags': snapshot_info['tags']
                 }
             }
         )
