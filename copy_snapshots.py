@@ -127,7 +127,7 @@ def copy_snapshots(subscription_id, storage_account_name,
                 body=snapshot_copy_data[index]
             )
 
-def check_copy_status(subscription_id, es_conn):
+def check_copy_status(subscription_id, storage_account_name, es_conn):
     """
     This method checks for any snapshots that haven't been updated,
     checks their current status and updates Elasticsearch
@@ -143,6 +143,7 @@ def check_copy_status(subscription_id, es_conn):
     )
 
     storage_accounts_client = AzureStorageAccountsClient(subscription_id)
+    dest_blob_service = storage_accounts_client.get_blob_service(storage_account_name)
 
     for copy in pending_copies:
         snapshot_copy_info = copy['_source']
@@ -182,7 +183,7 @@ def check_copy_status(subscription_id, es_conn):
                 if vhd_snapshot.error:
                     print(vhd_snapshot.error)
                 else:
-                    storage_accounts_client.delete_blob()
+                    dest_blob_service.delete_blob(CONTAINER_NAME, snapshot_copy_info['dest_blob'])
 
 
 if __name__ == "__main__":
