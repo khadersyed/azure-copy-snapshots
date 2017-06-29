@@ -128,10 +128,10 @@ class AzureManagedDisksClient(AzureSDKAuth):
             snapshot_name,
             {
                 'location': snapshot_info['dest_location'],
+                'tags': snapshot_info['tags'],
                 'creation_data': {
                     'create_option': 'Import',
-                    'source_uri': blob_uri,
-                    'tags': snapshot_info['tags']
+                    'source_uri': blob_uri
                 }
             }
         )

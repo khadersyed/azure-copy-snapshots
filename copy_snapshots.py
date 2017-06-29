@@ -173,14 +173,15 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
             )
 
             print(copy['_id'])
-            es_conn.index(
-                index=ES_INDEX,
-                doc_type=copy['_type'],
-                id=copy['_id'],
-                body=snapshot_copy_info
-            )
             if copy_status == "success":
                 vhd_snapshot = managed_disks_client.vhd_snapshot(snapshot_copy_info)
+                es_conn.index(
+                    index=ES_INDEX,
+                    doc_type=copy['_type'],
+                    id=copy['_id'],
+                    body=snapshot_copy_info
+                )
+
                 print("Snapshot created - {}".format(vhd_snapshot.name))
                 dest_blob_service.delete_blob(CONTAINER_NAME, snapshot_copy_info['dest_blob'])
 
