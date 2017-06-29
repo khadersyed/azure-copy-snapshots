@@ -62,7 +62,6 @@ def parse_cli_arguments():
             snapshot_sas_uris,
             es_conn
         )
-#        print(json.dumps(snapshot_copy_results, indent=2))
     else:
         parser.print_help()
 
@@ -142,6 +141,7 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
 
     storage_accounts_client = AzureStorageAccountsClient(subscription_id)
     resource_group_name = storage_accounts_client.get_resource_group(storage_account_name)
+
     for copy in pending_copies:
         snapshot_copy_info = copy['_source']
 
@@ -177,7 +177,7 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
                 body=snapshot_copy_info
             )
 #            if copy_status == "success":
-#                managed_disks_client.vhd_snapshot()
+#                managed_disks_client.vhd_snapshot(snapshot_copy_info)
 
 
 if __name__ == "__main__":

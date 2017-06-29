@@ -13,10 +13,6 @@ import time
 from datetime import datetime
 
 from azure.mgmt.compute import ComputeManagementClient
-from azure.mgmt.compute.models import (
-    DiskCreateOption,
-    StorageAccountTypes
-)
 
 from .sdk_auth import AzureSDKAuth
 
@@ -32,55 +28,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
             self.credentials,
             self.subscription_id
         )
-
-    def list_disks(self, unlocked_disks_only=False):
-        """ List all managed disks """
-        all_disks = self.__compute_client.disks.list()
-
-        disks_response = []
-
-        for disk in all_disks:
-            disk_dict = {}
-            disk_dict['name'] = disk.name
-            disk_dict['disk_type'] = disk.account_type.value
-            disk_dict['location'] = disk.location
-            disk_dict['encryption'] = disk.encryption_settings
-            disk_dict['disk_size_in_gb'] = disk.disk_size_gb
-            disk_dict['resource_group'] = disk.id.split('/')[4].lower()
-            try:
-                disk_dict['virtual_machine'] = disk.owner_id.split('/')[8]
-            except AttributeError:
-                disk_dict['virtual_machine'] = None
-
-            disks_response.append(disk_dict)
-
-        if unlocked_disks_only:
-            return [disk for disk in disks_response if not disk['virtual_machine']]
-        else:
-            return disks_response
-
-    def list_unlocked_disks(self):
-        """ List all unlocked disks """
-        return self.list_disks(unlocked_disks_only=True)
-
-    def delete_unlocked_disks(self):
-        """ List all managed disks """
-        unlocked_disks = self.list_unlocked_disks()
-
-        for disk in unlocked_disks:
-            self.delete_disk(disk)
-
-    def delete_disk(self, disk):
-        """ Delete a given managed disk """
-        print("Deleting: {}".format(disk['name']))
-        async_delete_disk = self.__compute_client.disks.delete(
-            disk['resource_group'],
-            disk['name']
-        )
-
-        result = async_delete_disk.result()
-        if result.error:
-            print(result.error)
 
     def list_snapshots(self):
         """ List all managed disk snapshots"""
@@ -99,63 +46,6 @@ class AzureManagedDisksClient(AzureSDKAuth):
             snapshots.append(snapshot_dict)
 
         return snapshots
-
-    def delete_old_snapshots(self, age_in_days=None):
-        """ Delete all snapshots older then age_in_days """
-        time_format = "%Y-%m-%dT%H:%M:%S.%f"
-        all_snapshots = self.list_snapshots()
-
-        if not age_in_days:
-            age_in_days = 3 # default of 3 days
-
-        for snapshot in all_snapshots:
-            snapshot_time = datetime.strptime(snapshot['snapshot_time'][:-6], time_format)
-            current_time = datetime.now(snapshot_time.tzinfo)
-            age = current_time - snapshot_time
-            if age.days > age_in_days:
-                self.delete_snapshot(snapshot)
-
-    def delete_snapshot(self, snapshot):
-        """ Deletes a snapshot when the snapshot id is provided """
-        print(snapshot['name'], snapshot['snapshot_time'])
-
-        async_delete_snapshot = self.__compute_client.snapshots.delete(
-            snapshot['resource_group'],
-            snapshot['name']
-        )
-        result = async_delete_snapshot.result()
-        if result.error:
-            print(result.error)
-
-    def list_snapshots_for_vm(self, vm_name=None, disk_name=None):
-        """ Get list of snapshots for a specific vm"""
-        snapshots_raw = self.__compute_client.snapshots.list()
-
-        vm_snapshots = [snapshot for snapshot in snapshots_raw
-                        if snapshot.tags['vm_name'] == vm_name]
-
-        vm_disks = {snapshot.tags['disk_name'] for snapshot in vm_snapshots}
-
-        snapshots_for_vm = {}
-        for disk in vm_disks:
-            snapshots_for_vm[disk] = []
-
-        for snapshot in vm_snapshots:
-            snapshot_info = {}
-            snapshot_info['name'] = snapshot.name
-            snapshot_info['id'] = snapshot.id
-            snapshot_info['location'] = snapshot.location
-            snapshot_info['mount_point'] = snapshot.tags['mount_point']
-            snapshot_info['snapshot_time'] = snapshot.time_created.isoformat()
-            snapshot_info['resource_group'] = snapshot.id.split('/')[4].lower()
-            snapshot_info['disk_size_in_gb'] = snapshot.disk_size_gb
-
-            snapshots_for_vm[snapshot.tags['disk_name']].append(snapshot_info)
-
-        if not disk_name:
-            return snapshots_for_vm
-        else:
-            return snapshots_for_vm[disk_name]
 
     def generate_sas_uri(self, resource_group_name, snapshot_name, expiry_in_seconds=86400):
         """ Generates a SAS URI that can be used to copy to storage accounts """
@@ -216,21 +106,26 @@ class AzureManagedDisksClient(AzureSDKAuth):
 
         return snapshot_copy_tracker
 
-    def vhd_snapshot(self, resource_group=None, vm_name=None, disk=None):
+    def vhd_snapshot(self, snapshot_info):
         """ Attached a restored disk to a VM """
-        virtual_machine = self.__compute_client.virtual_machines.get(
-            resource_group,
-            vm_name
+        blob_uri = "https://{}.blob.core.windows.net/{}/{}".format(
+            snapshot_info['dest_storage_account'],
+            snapshot_info['dest_container'],
+            snapshot_info['dest_blob']
+        )
+        print("Snapshot {} from blob {}".format(snapshot_info['tags']['disk_name'], blob_uri))
+        async_vhd_snapshot = self.__compute_client.snapshots.create_or_update(
+            snapshot_info['tags']['resource_group'],
+            snapshot_info['tags']['disk_name'],
+            {
+                'location': snapshot_info['location'],
+                'creation_data': {
+                    'create_option': 'Copy',
+                    'blob_uri': blob_uri
+                }
+            }
         )
 
-        vm_luns = [disk.lun for disk in virtual_machine.storage_profile.data_disks]
-        next_lun = max(vm_luns)+1
-
-        virtual_machine.storage_profile.data_disks.append({
-            'lun': next_lun,
-            'name': disk.name,
-            'create_option': DiskCreateOption.attach,
-            'managed_disk': {
-                'id': disk.id
-            }
-        })
+        result = async_vhd_snapshot.result()
+        if result.error:
+            print(result.error)
