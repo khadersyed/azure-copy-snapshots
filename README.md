@@ -2,6 +2,19 @@
 
 ## How does it work?
 
+### Ensure the following environment variables are set:
+
+```
+AZURE_CLIENT_ID
+AZURE_SECRET
+AZURE_TENANT
+AZURE_SUBSCRIPTION_ID
+```
+Do note that the source subscription id is read from the `AZURE_SUBSCRIPTION_ID` variable
+
+Another assumption is that the same service principal has access to both 
+the source and destination subscriptions
+
 ### To create sas uris and copy snapshots, do the following
 ```
 copy_snapshots.py -i <destination_subscription_id> -k localhost -n mysnapshotstore
@@ -27,7 +40,7 @@ Or alternately, let me explain, as one should:
 * Then we create sas uris for all of the aforementioned snapshots
 * We ship/copy the blobs to the other subscription - which could have a
   storage account in a different region than the one in the source region
-* We store all the data about the snapshots we are copying, the snapshot start
+* We store all the metadata about the snapshots we are copying, the snapshot start
   time and everything else in the elasticsearch index called `backup_copies`
 * To check the status of the snapshot copies, and update the elasticsearch
   index for any finished copies, pass the `-c` option
