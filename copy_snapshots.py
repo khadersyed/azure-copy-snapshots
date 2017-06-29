@@ -51,7 +51,7 @@ def parse_cli_arguments():
     )
 
     if args.check_copy_status:
-        check_copy_status(subscription_id, storage_account_name, es_conn)
+        check_copy_status(subscription_id, es_conn)
     elif args.destination_account_name:
         managed_disk_client = AzureManagedDisksClient()
 
@@ -69,10 +69,8 @@ def copy_snapshots(subscription_id, storage_account_name,
                    snapshot_copy_data, es_conn):
     """ This here method will copy snapshots to storage accounts in another subscription """
     storage_accounts_client = AzureStorageAccountsClient(subscription_id)
-    resource_group_name = storage_accounts_client.get_resource_group(storage_account_name)
 
     dest_blob_service = storage_accounts_client.get_blob_service(
-        resource_group_name,
         storage_account_name
     )
 
@@ -124,7 +122,7 @@ def copy_snapshots(subscription_id, storage_account_name,
                 body=snapshot_copy_data[index]
             )
 
-def check_copy_status(subscription_id, storage_account_name, es_conn):
+def check_copy_status(subscription_id, es_conn):
     """
     This method checks for any snapshots that haven't been updated,
     checks their current status and updates Elasticsearch
@@ -140,13 +138,11 @@ def check_copy_status(subscription_id, storage_account_name, es_conn):
     )
 
     storage_accounts_client = AzureStorageAccountsClient(subscription_id)
-    resource_group_name = storage_accounts_client.get_resource_group(storage_account_name)
 
     for copy in pending_copies:
         snapshot_copy_info = copy['_source']
 
         copy_status_details = storage_accounts_client.get_blob_copy_status(
-            resource_group_name,
             snapshot_copy_info['dest_blob'],
             snapshot_copy_info['dest_container'],
             snapshot_copy_info['dest_storage_account']

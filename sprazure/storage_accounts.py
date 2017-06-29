@@ -45,9 +45,13 @@ class AzureStorageAccountsClient(AzureSDKAuth):
 
         return storage_accounts
 
-    def __get_storage_key(self, storage_account_name=None):
+    def get_resource_group(self, storage_account_name):
+        """ Return the resource group for a storage account """
+        return self.storage_accounts[storage_account_name]['resource_group']
+
+    def __get_storage_key(self, storage_account_name):
         """ Method to return key given a storage account and resource group """
-        resource_group_name = self.storage_accounts['storage_account_name']['resource_group']
+        resource_group_name = self.get_resource_group(storage_account_name)
 
         storage_account_keys = self.__storage_client.storage_accounts.list_keys(
             resource_group_name,
