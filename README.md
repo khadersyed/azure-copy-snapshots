@@ -23,14 +23,16 @@ RTFC as they would say, in ye olde days
 
 Or alternately, let me explain, as one should:
 
-* We first get a list of all current snapshots
-* We then create sas uris for all of the aforementioned snapshots
-* Then we ship/copy the blobs to the other subscription - which could have a
+* We get a list of all current snapshots
+* Then we create sas uris for all of the aforementioned snapshots
+* We ship/copy the blobs to the other subscription - which could have a
   storage account in a different region than the one in the source region
 * We store all the data about the snapshots we are copying, the snapshot start
   time and everything else in the elasticsearch index called `backup_copies`
-* We can then pass the `-c` additional argument to check for finished copies,
-  update their sizes etc., into the same elasticsearch index
-* And that's basically it
+* To check the status of the snapshot copies, and update the elasticsearch
+  index for any finished copies, pass the `-c` option
+* On a successful copy, a disk snapshot is triggered and the copied blob/vhd is
+  deleted
+* And that's basically it...maybe
 
 Remember to test the restoration of your backups, folks!!
