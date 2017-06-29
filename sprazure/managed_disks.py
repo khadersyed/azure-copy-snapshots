@@ -113,9 +113,10 @@ class AzureManagedDisksClient(AzureSDKAuth):
             snapshot_info['dest_container'],
             snapshot_info['dest_blob']
         )
+
         print("Snapshot {} from blob {}".format(snapshot_info['tags']['disk_name'], blob_uri))
         async_vhd_snapshot = self.__compute_client.snapshots.create_or_update(
-            snapshot_info['tags']['resource_group'],
+            snapshot_info['dest_resource_group'],
             snapshot_info['tags']['disk_name'],
             {
                 'location': snapshot_info['location'],
@@ -126,6 +127,4 @@ class AzureManagedDisksClient(AzureSDKAuth):
             }
         )
 
-        result = async_vhd_snapshot.result()
-        if result.error:
-            print(result.error)
+        return async_vhd_snapshot.result()

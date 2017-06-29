@@ -69,6 +69,9 @@ def copy_snapshots(subscription_id, storage_account_name,
                    snapshot_copy_data, es_conn):
     """ This here method will copy snapshots to storage accounts in another subscription """
     storage_accounts_client = AzureStorageAccountsClient(subscription_id)
+    dest_storage_account_info = storage_accounts_client.storage_accounts[storage_account_name]
+    dest_location = dest_storage_account_info['location']
+    dest_resource_group = dest_storage_account_info['resource_group']
 
     dest_blob_service = storage_accounts_client.get_blob_service(
         storage_account_name
@@ -103,6 +106,8 @@ def copy_snapshots(subscription_id, storage_account_name,
             snapshot_copy_data[index]['dest_storage_account'] = storage_account_name
             snapshot_copy_data[index]['dest_container'] = CONTAINER_NAME
             snapshot_copy_data[index]['dest_subscription_id'] = subscription_id
+            snapshot_copy_data[index]['dest_location'] = dest_location
+            snapshot_copy_data[index]['dest_resource_group'] = dest_resource_group
 
             dest_blob_service.copy_blob(
                 CONTAINER_NAME,
@@ -172,8 +177,12 @@ def check_copy_status(subscription_id, es_conn):
                 id=copy['_id'],
                 body=snapshot_copy_info
             )
-#            if copy_status == "success":
-#                managed_disks_client.vhd_snapshot(snapshot_copy_info)
+            if copy_status == "success":
+                vhd_snapshot = managed_disks_client.vhd_snapshot(snapshot_copy_info)
+                if vhd_snapshot.error:
+                    print(vhd_snapshot.error)
+                else:
+                    storage_accounts_client.delete_blob()
 
 
 if __name__ == "__main__":
