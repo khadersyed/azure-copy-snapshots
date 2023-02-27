@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 """
-Copyright (c) 2017 Sprinklr Inc.
-Primary author: khader.syed@sprinklr.com
+Primary author: geek@sidcarter.com
 
 Script to copy managed disk snapshots to secondary region
 and update information about copied snapshots to elasticsearch
